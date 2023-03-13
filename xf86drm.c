@@ -261,6 +261,7 @@ drmGetAfbcFormatModifierNameFromArm(uint64_t modifier, FILE *fp)
 static bool
 drmGetAfrcFormatModifierNameFromArm(uint64_t modifier, FILE *fp)
 {
+    bool scan_layout;
     for (unsigned int i = 0; i < 2; ++i) {
         uint64_t coding_unit_block =
           (modifier >> (i * 4)) & AFRC_FORMAT_MOD_CU_SIZE_MASK;
@@ -292,7 +293,7 @@ drmGetAfrcFormatModifierNameFromArm(uint64_t modifier, FILE *fp)
         }
     }
 
-    bool scan_layout =
+    scan_layout =
         (modifier & AFRC_FORMAT_MOD_LAYOUT_SCAN) == AFRC_FORMAT_MOD_LAYOUT_SCAN;
     if (scan_layout) {
         fprintf(fp, "SCAN");
@@ -848,7 +849,7 @@ wait_for_udev:
     }
 #endif
 
-    fd = open(buf, O_RDWR | O_CLOEXEC, 0);
+    fd = open(buf, O_RDWR | O_CLOEXEC);
     drmMsg("drmOpenDevice: open result is %d, (%s)\n",
            fd, fd < 0 ? strerror(errno) : "OK");
     if (fd >= 0)
@@ -868,7 +869,7 @@ wait_for_udev:
             chmod(buf, devmode);
         }
     }
-    fd = open(buf, O_RDWR | O_CLOEXEC, 0);
+    fd = open(buf, O_RDWR | O_CLOEXEC);
     drmMsg("drmOpenDevice: open result is %d, (%s)\n",
            fd, fd < 0 ? strerror(errno) : "OK");
     if (fd >= 0)
@@ -906,7 +907,7 @@ static int drmOpenMinor(int minor, int create, int type)
         return -EINVAL;
 
     sprintf(buf, dev_name, DRM_DIR_NAME, minor);
-    if ((fd = open(buf, O_RDWR | O_CLOEXEC, 0)) >= 0)
+    if ((fd = open(buf, O_RDWR | O_CLOEXEC)) >= 0)
         return fd;
     return -errno;
 }
@@ -1134,7 +1135,7 @@ static int drmOpenByName(const char *name, int type)
         int  retcode;
 
         sprintf(proc_name, "/proc/dri/%d/name", i);
-        if ((fd = open(proc_name, O_RDONLY, 0)) >= 0) {
+        if ((fd = open(proc_name, O_RDONLY)) >= 0) {
             retcode = read(fd, buf, sizeof(buf)-1);
             close(fd);
             if (retcode) {
@@ -1559,8 +1560,8 @@ drm_public int drmAddMap(int fd, drm_handle_t offset, drmSize size, drmMapType t
     memclear(map);
     map.offset  = offset;
     map.size    = size;
-    map.type    = type;
-    map.flags   = flags;
+    map.type    = (enum drm_map_type)type;
+    map.flags   = (enum drm_map_flags)flags;
     if (drmIoctl(fd, DRM_IOCTL_ADD_MAP, &map))
         return -errno;
     if (handle)
@@ -1604,7 +1605,7 @@ drm_public int drmAddBufs(int fd, int count, int size, drmBufDescFlags flags,
     memclear(request);
     request.count     = count;
     request.size      = size;
-    request.flags     = flags;
+    request.flags     = (int)flags;
     request.agp_start = agp_offset;
 
     if (drmIoctl(fd, DRM_IOCTL_ADD_BUFS, &request))
@@ -1888,7 +1889,7 @@ drm_public int drmDMA(int fd, drmDMAReqPtr request)
     dma.send_count      = request->send_count;
     dma.send_indices    = request->send_list;
     dma.send_sizes      = request->send_sizes;
-    dma.flags           = request->flags;
+    dma.flags           = (enum drm_dma_flags)request->flags;
     dma.request_count   = request->request_count;
     dma.request_size    = request->request_size;
     dma.request_indices = request->request_list;
@@ -2825,8 +2826,8 @@ drm_public int drmGetMap(int fd, int idx, drm_handle_t *offset, drmSize *size,
         return -errno;
     *offset = map.offset;
     *size   = map.size;
-    *type   = map.type;
-    *flags  = map.flags;
+    *type   = (drmMapType)map.type;
+    *flags  = (drmMapFlags)map.flags;
     *handle = (unsigned long)map.handle;
     *mtrr   = map.mtrr;
     return 0;
@@ -3377,8 +3378,9 @@ static char *drmGetMinorNameForFD(int fd, int type)
 
     while ((ent = readdir(sysdir))) {
         if (strncmp(ent->d_name, name, len) == 0) {
-            snprintf(dev_name, sizeof(dev_name), DRM_DIR_NAME "/%s",
-                 ent->d_name);
+            if (snprintf(dev_name, sizeof(dev_name), DRM_DIR_NAME "/%s",
+                        ent->d_name) < 0)
+                return NULL;
 
             closedir(sysdir);
             return strdup(dev_name);
@@ -3789,7 +3791,9 @@ static int parse_separate_sysfs_files(int maj, int min,
     get_pci_path(maj, min, pci_path);
 
     for (unsigned i = ignore_revision ? 1 : 0; i < ARRAY_SIZE(attrs); i++) {
-        snprintf(path, PATH_MAX, "%s/%s", pci_path, attrs[i]);
+        if (snprintf(path, PATH_MAX, "%s/%s", pci_path, attrs[i]) < 0)
+            return -errno;
+
         fp = fopen(path, "r");
         if (!fp)
             return -errno;
@@ -3819,7 +3823,9 @@ static int parse_config_sysfs_file(int maj, int min,
 
     get_pci_path(maj, min, pci_path);
 
-    snprintf(path, PATH_MAX, "%s/config", pci_path);
+    if (snprintf(path, PATH_MAX, "%s/config", pci_path) < 0)
+        return -errno;
+
     fd = open(path, O_RDONLY);
     if (fd < 0)
         return -errno;
@@ -3886,7 +3892,7 @@ static int drmParsePciDeviceInfo(int maj, int min,
     if (get_sysctl_pci_bus_info(maj, min, &info) != 0)
         return -EINVAL;
 
-    fd = open("/dev/pci", O_RDONLY, 0);
+    fd = open("/dev/pci", O_RDONLY);
     if (fd < 0)
         return -errno;
 
@@ -4497,19 +4503,16 @@ drm_device_has_rdev(drmDevicePtr device, dev_t find_rdev)
 #define MAX_DRM_NODES 256
 
 /**
- * Get information about the opened drm device
+ * Get information about a device from its dev_t identifier
  *
- * \param fd file descriptor of the drm device
+ * \param find_rdev dev_t identifier of the device
  * \param flags feature/behaviour bitmask
  * \param device the address of a drmDevicePtr where the information
  *               will be allocated in stored
  *
  * \return zero on success, negative error code otherwise.
- *
- * \note Unlike drmGetDevice it does not retrieve the pci device revision field
- * unless the DRM_DEVICE_GET_PCI_REVISION \p flag is set.
  */
-drm_public int drmGetDevice2(int fd, uint32_t flags, drmDevicePtr *device)
+drm_public int drmGetDeviceFromDevId(dev_t find_rdev, uint32_t flags, drmDevicePtr *device)
 {
 #ifdef __OpenBSD__
     /*
@@ -4518,22 +4521,18 @@ drm_public int drmGetDevice2(int fd, uint32_t flags, drmDevicePtr *device)
      * Avoid stat'ing all of /dev needlessly by implementing this custom path.
      */
     drmDevicePtr     d;
-    struct stat      sbuf;
     char             node[PATH_MAX + 1];
     const char      *dev_name;
     int              node_type, subsystem_type;
     int              maj, min, n, ret;
 
-    if (fd == -1 || device == NULL)
+    if (device == NULL)
         return -EINVAL;
 
-    if (fstat(fd, &sbuf))
-        return -errno;
+    maj = major(find_rdev);
+    min = minor(find_rdev);
 
-    maj = major(sbuf.st_rdev);
-    min = minor(sbuf.st_rdev);
-
-    if (!drmNodeIsDRM(maj, min) || !S_ISCHR(sbuf.st_mode))
+    if (!drmNodeIsDRM(maj, min))
         return -EINVAL;
 
     node_type = drmGetMinorType(maj, min);
@@ -4566,26 +4565,20 @@ drm_public int drmGetDevice2(int fd, uint32_t flags, drmDevicePtr *device)
     drmDevicePtr d;
     DIR *sysdir;
     struct dirent *dent;
-    struct stat sbuf;
     int subsystem_type;
     int maj, min;
     int ret, i, node_count;
-    dev_t find_rdev;
 
     if (drm_device_validate_flags(flags))
         return -EINVAL;
 
-    if (fd == -1 || device == NULL)
+    if (device == NULL)
         return -EINVAL;
 
-    if (fstat(fd, &sbuf))
-        return -errno;
+    maj = major(find_rdev);
+    min = minor(find_rdev);
 
-    find_rdev = sbuf.st_rdev;
-    maj = major(sbuf.st_rdev);
-    min = minor(sbuf.st_rdev);
-
-    if (!drmNodeIsDRM(maj, min) || !S_ISCHR(sbuf.st_mode))
+    if (!drmNodeIsDRM(maj, min))
         return -EINVAL;
 
     subsystem_type = drmParseSubsystemType(maj, min);
@@ -4632,6 +4625,35 @@ drm_public int drmGetDevice2(int fd, uint32_t flags, drmDevicePtr *device)
         return -ENODEV;
     return 0;
 #endif
+}
+
+/**
+ * Get information about the opened drm device
+ *
+ * \param fd file descriptor of the drm device
+ * \param flags feature/behaviour bitmask
+ * \param device the address of a drmDevicePtr where the information
+ *               will be allocated in stored
+ *
+ * \return zero on success, negative error code otherwise.
+ *
+ * \note Unlike drmGetDevice it does not retrieve the pci device revision field
+ * unless the DRM_DEVICE_GET_PCI_REVISION \p flag is set.
+ */
+drm_public int drmGetDevice2(int fd, uint32_t flags, drmDevicePtr *device)
+{
+    struct stat sbuf;
+
+    if (fd == -1)
+        return -EINVAL;
+
+    if (fstat(fd, &sbuf))
+        return -errno;
+
+    if (!S_ISCHR(sbuf.st_mode))
+        return -EINVAL;
+
+    return drmGetDeviceFromDevId(sbuf.st_rdev, flags, device);
 }
 
 /**
@@ -5083,4 +5105,44 @@ drmGetFormatModifierName(uint64_t modifier)
         return drmGetFormatModifierFromSimpleTokens(modifier);
 
     return modifier_found;
+}
+
+/**
+ * Get a human-readable name for a DRM FourCC format.
+ *
+ * \param format The format.
+ * \return A malloc'ed string containing the format name. Caller is responsible
+ * for freeing it.
+ */
+drm_public char *
+drmGetFormatName(uint32_t format)
+{
+    char *str, code[5];
+    const char *be;
+    size_t str_size, i;
+
+    be = (format & DRM_FORMAT_BIG_ENDIAN) ? "_BE" : "";
+    format &= ~DRM_FORMAT_BIG_ENDIAN;
+
+    if (format == DRM_FORMAT_INVALID)
+        return strdup("INVALID");
+
+    code[0] = (char) ((format >> 0) & 0xFF);
+    code[1] = (char) ((format >> 8) & 0xFF);
+    code[2] = (char) ((format >> 16) & 0xFF);
+    code[3] = (char) ((format >> 24) & 0xFF);
+    code[4] = '\0';
+
+    /* Trim spaces at the end */
+    for (i = 3; i > 0 && code[i] == ' '; i--)
+        code[i] = '\0';
+
+    str_size = strlen(code) + strlen(be) + 1;
+    str = malloc(str_size);
+    if (!str)
+        return NULL;
+
+    snprintf(str, str_size, "%s%s", code, be);
+
+    return str;
 }
