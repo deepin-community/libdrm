@@ -1,3 +1,31 @@
+libdrm (2.4.118-0deepin) unstable; urgency=medium
+
+  * New upstream release.
+  * symbols: Updated.
+
+ -- xiangzelong <xiangzelong@deepin.org>  Thu, 14 Dec 2023 10:51:08 +0800
+
+libdrm (2.4.117-1) unstable; urgency=medium
+
+  * New upstream release.
+  * symbols: Updated.
+  * control, rules: Drop kfreebsd.
+
+ -- Timo Aaltonen <tjaalton@debian.org>  Thu, 02 Nov 2023 15:55:11 +0200
+
+libdrm (2.4.116-1) unstable; urgency=medium
+
+  * New upstream release.
+  * symbols: Updated.
+
+ -- Timo Aaltonen <tjaalton@debian.org>  Mon, 16 Oct 2023 15:10:44 +0300
+
+libdrm (2.4.115-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Timo Aaltonen <tjaalton@debian.org>  Mon, 19 Jun 2023 16:34:33 +0300
+
 libdrm (2.4.114-1) unstable; urgency=medium
 
   * New upstream release.
@@ -1380,4 +1408,3 @@ libdrm (1.0.2-1) unstable; urgency=low
   * Initial release. Closes: #324074
 
  -- Marcelo E. Magallon <mmagallo@debian.org>  Fri, 19 Aug 2005 21:11:18 -0600
-
