@@ -1,9 +1,43 @@
-libdrm (2.4.118-0deepin) unstable; urgency=medium
+libdrm (2.4.120-2) unstable; urgency=medium
+
+  * control: Drop libatomic-ops-dev from build-depends again, as we can
+    continue using atomic ops provided by gcc.
+
+ -- Timo Aaltonen <tjaalton@debian.org>  Thu, 08 Feb 2024 10:34:49 +0200
+
+libdrm (2.4.120-1) unstable; urgency=medium
 
   * New upstream release.
+
+ -- Timo Aaltonen <tjaalton@debian.org>  Tue, 16 Jan 2024 14:08:50 +0200
+
+libdrm (2.4.119-2) unstable; urgency=medium
+
+  [ Diederik de Haas ]
+  * Add new signing-key from Marek Olšák
+  * symbols: Add new symbol for amdgpu
+
+ -- Timo Aaltonen <tjaalton@debian.org>  Tue, 16 Jan 2024 14:05:50 +0200
+
+libdrm (2.4.119-1) unstable; urgency=medium
+
+  [ Diederik de Haas ]
+  * control: Remove unused Build-Depends
+  * control: Update Standards-Version to 4.6.2 (no changes needed)
+  * control: Specify Rules-Requires-Root: no
+  * control, rules: Drop quilt B-D and param
+  * control: Update Homepage to point to gitlab.f.o
+  * patches: Add DEP-3 header to 01_default_perms.diff
+  * symbols: Add missing Build-Depends-Package fields
+  * symbols, lintian: Drop reference to private symbols
+
+  [ Timo Aaltonen ]
+  * New upstream release. (Closes: #1059854)
+  * control: Enable atomic-ops.
+  * debian/gitlab-ci.yml: Added.
   * symbols: Updated.
 
- -- xiangzelong <xiangzelong@deepin.org>  Thu, 14 Dec 2023 10:51:08 +0800
+ -- Timo Aaltonen <tjaalton@debian.org>  Thu, 11 Jan 2024 08:56:52 +0200
 
 libdrm (2.4.117-1) unstable; urgency=medium
 
