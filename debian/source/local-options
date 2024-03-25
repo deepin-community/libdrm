@@ -1,0 +1,16 @@
+# ignore symlinks from git, use source files from the tarball
+extend-diff-ignore = intel/tests/g.*batch.sh
+
+## The following files aren't shipped in the upstream tarball
+
+# Android Makefiles
+extend-diff-ignore = Android.*mk|CleanSpec\.mk
+
+# Android source files
+extend-diff-ignore = android/gralloc_handle.h
+
+# misc. files and scripts used by libdrm developers but not required for the build
+extend-diff-ignore = \.editorconfig|\.gitlab-ci.yml|CONTRIBUTING|RELEASING|autogen\.sh|freedreno/kgsl/README
+
+# CI
+extend-diff-ignore = .gitlab-ci/debian-install.sh
