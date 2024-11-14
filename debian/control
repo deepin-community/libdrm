@@ -5,11 +5,10 @@ Uploaders: Andreas Boll <aboll@debian.org>
 Build-Depends:
  debhelper-compat (= 13),
  meson,
- libatomic-ops-dev,
  libpciaccess-dev,
  libudev-dev [linux-any],
  libx11-dev,
- pkg-config,
+ pkgconf,
  python3-docutils,
  python3-setuptools,
 # valgrind [amd64 armhf i386 mips mipsel powerpc s390x],
@@ -105,7 +104,7 @@ Description: Userspace interface to kernel DRM services -- runtime
  This is a udeb, or a microdeb, for the debian-installer.
 
 Package: libdrm-intel1
-Architecture: amd64 i386 hurd-i386 x32
+Architecture: amd64 arm64 i386 hurd-i386 x32
 Depends:
  ${shlibs:Depends},
  ${misc:Depends},
