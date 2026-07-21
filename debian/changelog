@@ -1,3 +1,9 @@
+libdrm (2.4.124-2deepin1) unstable; urgency=medium
+
+  * Restore deepin sw_64 support patch from master branch.
+
+ -- lichenggang <lichenggang@uniontech.com>  Fri, 17 Jul 2026 23:24:39 +0800
+
 libdrm (2.4.124-2) unstable; urgency=medium
 
   [ Daniel van Vugt ]
