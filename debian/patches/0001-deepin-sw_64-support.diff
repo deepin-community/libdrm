@@ -1,0 +1,61 @@
+diff --git a/xf86drm.c b/xf86drm.c
+index 2e76f0e..81e7d0c 100644
+--- a/xf86drm.c
++++ b/xf86drm.c
+@@ -1117,7 +1117,7 @@ static int drmOpenByBusid(const char *busid, int type)
+             sv.drm_dd_major = -1;        /* Don't care */
+             sv.drm_dd_minor = -1;        /* Don't care */
+             if (drmSetInterfaceVersion(fd, &sv)) {
+-#ifndef __alpha__
++#if !defined(__alpha__) && !defined(__sw_64__)
+                 pci_domain_ok = 0;
+ #endif
+                 sv.drm_di_major = 1;
+diff --git a/xf86drm.h b/xf86drm.h
+index 2cb1415..f365f08 100644
+--- a/xf86drm.h
++++ b/xf86drm.h
+@@ -407,6 +407,34 @@ typedef struct _drmSetVersion {
+ 		: "memory");			\
+ 	} while (0)
+ 
++#elif defined(__sw_64__)
++
++#define	DRM_CAS(lock, old, new, ret)		\
++	do {					\
++		int tmp, old32;			\
++		__asm__ __volatile__(		\
++		"	addw	$31, %5, %3\n"	\
++		"1:	lldw	%0, %2\n"	\
++		"	cmpeq	%0, %3, %1\n"	\
++		"	wr_f	%1\n"		\
++		"	mov	%4, %0\n"	\
++		"	lstl	%0, %2\n"	\
++		"	rd_f	%0\n"		\
++		"	beq	%1, 2f\n"	\
++		"	beq	%0, 3f\n"	\
++		"	memb\n"			\
++		"2:	cmpeq	%1, 0, %1\n"	\
++		".subsection 2\n"		\
++		"3:	br	1b\n"		\
++		".previous"			\
++		: "=&r"(tmp), "=&r"(ret),	\
++		  "=m"(__drm_dummy_lock(lock)),	\
++		  "=&r"(old32)			\
++		: "r"(new), "r"(old)		\
++		: "memory");			\
++	} while (0)
++
++
+ #elif defined(__sparc__)
+ 
+ #define DRM_CAS(lock,old,new,__ret)				\
+@@ -511,7 +539,7 @@ do {	register unsigned int __old __asm("o0");		\
+ #define DRM_CAS(lock,old,new,ret) do { ret=1; } while (0) /* FAST LOCK FAILS */
+ #endif
+ 
+-#if defined(__alpha__)
++#if defined(__alpha__) || defined(__sw_64__)
+ #define DRM_CAS_RESULT(_result)		long _result
+ #elif defined(__powerpc__)
+ #define DRM_CAS_RESULT(_result)		int _result
