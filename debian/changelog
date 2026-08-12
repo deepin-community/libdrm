@@ -1,9 +1,3 @@
-libdrm (2.4.134-3deepin1) unstable; urgency=medium
-
-  * update changelog
-
- -- GuoYao <guoyao@uniontech.com>  Wed, 05 Aug 2026 15:41:50 +0800
-
 libdrm (2.4.134-3) unstable; urgency=medium
 
   * Enable freedreno on i386 too
